@@ -26,11 +26,11 @@ const TURN_SPEED = 360;
 /**
  * @type {HTMLCanvasElement}
  */
-var canvas = document.getElementById("game");
+let canvas = document.getElementById("game");
 
-var ctxt = canvas.getContext('2d');
+let ctxt = canvas.getContext('2d');
 
-var ship = {
+let ship = {
 	x: canvas.width / 2,
 	y: canvas.height / 2,
 	radius: SHIP_SIZE / 2,
@@ -87,7 +87,9 @@ function keyUp($event) {
 	}
 }
 
-
+/**
+ * Função que atualiza os frames do jogo.
+ */
 function update() {
 	// Desenhar espaço
 	ctxt.fillStyle = "#000000"; // Cor preta
