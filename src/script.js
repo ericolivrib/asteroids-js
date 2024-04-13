@@ -9,6 +9,31 @@ const FPS = 30;
 const FRICTION = 0.7;
 
 /**
+ * Irregularidade dos asteróides (0 = sem irregularidade; 1 = muita irregularidade)
+ */
+const ASTEROIDS_JAG = 0.4;
+
+/**
+ * Quantidade inicial de asteróides
+ */
+const ASTEROIDS_NUMBER = 5;
+
+/**
+ * Velocidade máxina inicial dos asteróides em pixels por segudo
+ */
+const ASTEROIDS_SPEED = 50;
+
+/**
+ * Tamanho/volume inicial dos asteróides em pixels
+ */
+const ASTEROIDS_SIZE = 100;
+
+/**
+ * Número médio de vértices em cada asteróide
+ */
+const ASTEROIDS_VERT = 10;
+
+/**
  * Largura da nave em pixels
  */
 const SHIP_SIZE = 30;
@@ -43,6 +68,9 @@ let ship = {
 	}
 };
 
+let asteroids = [newAsteroid(0, 0)];
+createAsteroidsBelt();
+
 // Configurar manipuladores de eventos
 document.addEventListener("keydown", keyDown);
 document.addEventListener("keyup", keyUp);
@@ -50,6 +78,36 @@ document.addEventListener("keyup", keyUp);
 
 setInterval(update, 1000 / FPS); // Configurar loop do jogo
 
+/**
+ * Função que cria o cinturão de asteróides
+ * (adiciona novos asteróides ao array de asteróides)
+ */
+function createAsteroidsBelt() {
+	asteroids = [];
+
+	let x, y;
+
+	for (let i = 0; i < ASTEROIDS_NUMBER; i++) {
+		do {
+			x = Math.floor((Math.random() * canvas.width));
+			y = Math.floor((Math.random() * canvas.height));
+		} while (distanceBetweenPoints(ship.x, ship.y, x, y) < ASTEROIDS_SIZE * 2 + ship.radius);
+
+		asteroids.push(newAsteroid(x, y));
+	}
+}
+
+/**
+ * Função que calcula a distância entre os pontos (eixos da nave de um asteróide).
+ * @param {number} x1 Eixo x da nave
+ * @param {number} y1 Eixo y da nave
+ * @param {number} x2 Eixo x do asteróide
+ * @param {number} y2 Eixo y do asteróide
+ * @returns {number} Distância entre os pontos.
+ */
+function distanceBetweenPoints(x1, y1, x2, y2) {
+	return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+}
 
 /**
  * Função de rotação da nave.
@@ -85,6 +143,36 @@ function keyUp($event) {
 			ship.rotation = 0;
 			break;
 	}
+}
+
+/**
+ * Função para criar um asteróide.
+ * @param {number} x Eixo x do novo asteróide
+ * @param {number} y Eixo y do novo asteróide
+ */
+function newAsteroid(x, y) {
+	let asteroid = {
+		x: x,
+		y: y,
+		xy: Math.random() * ASTEROIDS_SPEED / FPS * (Math.random() < 0.5 ? 1 : -1),
+		yx: Math.random() * ASTEROIDS_SPEED / FPS * (Math.random() < 0.5 ? 1 : -1),
+		radius: ASTEROIDS_SIZE / 2,
+		/**
+		 * Ângulo em radianos
+		 */
+		angle: Math.random() * Math.PI * 2,
+		vertex: Math.floor(Math.random() * (ASTEROIDS_VERT + 1) + ASTEROIDS_VERT / 2),
+		offset: [0]
+	};
+
+	// Criar matriz de deslocamento de vértice
+
+	asteroid.offset = []
+	for (let i = 0; i < asteroid.vertex; i++) {
+		asteroid.offset.push(Math.random() * ASTEROIDS_JAG * 2 + 1 - ASTEROIDS_JAG);
+	}
+
+	return asteroid;
 }
 
 /**
@@ -154,6 +242,61 @@ function update() {
 
 	ctxt.closePath();
 	ctxt.stroke();
+
+	// Renderizar os asteróides
+	ctxt.strokeStyle = "#708090"; // Cor cinza
+	ctxt.lineWidth = SHIP_SIZE / 20;
+
+	let x, y, radius, angle, vertex, offset;
+	for (let i = 0; i < asteroids.length; i++) {
+
+		// Obter propriedades de asteróide
+		x = asteroids[i].x;
+		y = asteroids[i].y;
+		radius = asteroids[i].radius;
+		angle = asteroids[i].angle;
+		vertex = asteroids[i].vertex;
+		offset = asteroids[i].offset;
+
+		// Renderizar "a path"
+		ctxt.beginPath();
+		ctxt.moveTo(
+			x + radius * offset[0] * Math.cos(angle),
+			y + radius * offset[0] * Math.sin(angle),
+		);
+
+		// Renderizar polígono
+		for (let j = 1; j < vertex; j++) {
+			ctxt.lineTo(
+				x + radius * offset[j] * Math.cos(angle + j * Math.PI * 2 / vertex),
+				y + radius * offset[j] * Math.sin(angle + j * Math.PI * 2 / vertex),
+			);
+		}
+
+		ctxt.closePath();
+		ctxt.stroke();
+
+
+		// Mover o asteróide
+
+		asteroids[i].x += asteroids[i].xy;
+		asteroids[i].y += asteroids[i].yx;
+
+		// Manipular borda de tela
+		if (asteroids[i].x < 0 - asteroids[i].radius) {
+			asteroids[i].x = canvas.width + asteroids[i].radius;
+		} else if (asteroids[i].x > canvas.width + asteroids[i].radius) {
+			asteroids[i].x = asteroids[i].radius
+		}
+
+		if (asteroids[i].y < 0 - asteroids[i].radius) {
+			asteroids[i].y = canvas.height + asteroids[i].radius;
+		} else if (asteroids[i].y > canvas.height + asteroids[i].radius) {
+			asteroids[i].y = asteroids[i].radius
+		}
+	}
+
+
 
 	// Girar nave
 	ship.angle += ship.rotation;
